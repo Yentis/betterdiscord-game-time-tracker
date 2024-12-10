@@ -1,14 +1,14 @@
-import { Setting } from '../interfaces/settings'
+import { Setting } from '../interfaces/settings';
 
 export class Utils {
   public static SettingItem(
     options: Setting & {
-      children: unknown[]
+      children: unknown[];
     }
   ) {
     return {
       ...options,
       type: 'custom',
-    }
+    };
   }
 }

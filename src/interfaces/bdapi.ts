@@ -1,45 +1,45 @@
-import { ReactElement } from 'react'
-import { Setting } from './settings'
+import { ReactElement } from 'react';
+import { Setting } from './settings';
 
 export type ChangelogChanges = {
-  title: string
-  type: 'fixed' | 'added' | 'progress' | 'changed'
-  items: string[]
-  blurb?: string
-}
+  title: string;
+  type: 'fixed' | 'added' | 'progress' | 'changed';
+  items: string[];
+  blurb?: string;
+};
 
 type ChangelogOptions = {
-  title: string
-  subtitle?: string
-  blurb?: string
-  banner?: string
-  video?: string
-  poster?: string
-  footer?: string | ReactElement | (string | ReactElement)[]
-  changes?: ChangelogChanges[]
-}
+  title: string;
+  subtitle?: string;
+  blurb?: string;
+  banner?: string;
+  video?: string;
+  poster?: string;
+  footer?: string | ReactElement | (string | ReactElement)[];
+  changes?: ChangelogChanges[];
+};
 
 type SettingsPanelOptions = {
-  settings: Setting[]
-  onChange: (categoryId: string | null, settingId: string, settingValue: unknown) => void
-  onDrawerToggle?: (categoryId: string, state: boolean) => void
-  getDrawerState?: (categoryId: string, defaultState: boolean) => void
-}
+  settings: Setting[];
+  onChange: (categoryId: string | null, settingId: string, settingValue: unknown) => void;
+  onDrawerToggle?: (categoryId: string, state: boolean) => void;
+  getDrawerState?: (categoryId: string, defaultState: boolean) => void;
+};
 
 // TODO: remove custom TS type when BD types are updated
 export type BdApiExtended = typeof BdApi & {
   UI: {
-    showChangelogModal: (options: ChangelogOptions) => string
-    buildSettingItem: (setting: Setting) => ReactElement
-    buildSettingsPanel: (options: SettingsPanelOptions) => ReactElement
-  }
+    showChangelogModal: (options: ChangelogOptions) => string;
+    buildSettingItem: (setting: Setting) => ReactElement;
+    buildSettingsPanel: (options: SettingsPanelOptions) => ReactElement;
+  };
   Components: {
-    Group: string
-    TextInput: string
-  }
+    Group: string;
+    TextInput: string;
+  };
   ReactDOM: {
     createRoot: (element: HTMLElement) => {
-      render: (element: ReactElement) => void
-    }
-  }
-}
+      render: (element: ReactElement) => void;
+    };
+  };
+};

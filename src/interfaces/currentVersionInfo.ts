@@ -1,4 +1,4 @@
 export interface CurrentVersionInfo {
-  version?: string
-  hasShownChangelog?: boolean
+  version?: string;
+  hasShownChangelog?: boolean;
 }

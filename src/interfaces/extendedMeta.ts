@@ -1,6 +1,6 @@
-import { Meta } from 'betterdiscord'
+import { Meta } from 'betterdiscord';
 
 export interface ExtendedMeta extends Meta {
-  source: string
-  license: string
+  source: string;
+  license: string;
 }

@@ -1,4 +1,4 @@
-const { resolve } = require('path')
+const { resolve } = require('path');
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -36,6 +36,7 @@ module.exports = {
     'no-fallthrough': 'off',
     'comma-dangle': 'off',
     'space-before-function-paren': 'off',
+    semi: 'off',
 
     'import/first': 'off',
     'import/namespace': 'error',
@@ -60,4 +61,4 @@ module.exports = {
       },
     ],
   },
-}
+};

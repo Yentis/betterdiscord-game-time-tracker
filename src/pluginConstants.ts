@@ -1,4 +1,4 @@
-import { ChangelogChanges } from './interfaces/bdapi'
+import { ChangelogChanges } from './interfaces/bdapi';
 
 export const PLUGIN_CHANGELOG: ChangelogChanges[] = [
   {
@@ -6,10 +6,10 @@ export const PLUGIN_CHANGELOG: ChangelogChanges[] = [
     type: 'added',
     items: ['Initial release'],
   },
-]
+];
 
-export const SETTINGS_KEY = 'settings'
-export const CURRENT_VERSION_INFO_KEY = 'currentVersionInfo'
+export const SETTINGS_KEY = 'settings';
+export const CURRENT_VERSION_INFO_KEY = 'currentVersionInfo';
 export const DEFAULT_SETTINGS = {
   games: {},
-}
+};
