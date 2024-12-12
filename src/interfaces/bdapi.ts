@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
 import { Setting } from './settings';
+import { BoundBdApi } from 'betterdiscord';
 
 export type ChangelogChanges = {
   title: string;
@@ -27,7 +28,7 @@ type SettingsPanelOptions = {
 };
 
 // TODO: remove custom TS type when BD types are updated
-export type BdApiExtended = typeof BdApi & {
+export type BoundBdApiExtended = BoundBdApi & {
   UI: {
     showChangelogModal: (options: ChangelogOptions) => string;
     buildSettingItem: (setting: Setting) => ReactElement;
@@ -36,10 +37,19 @@ export type BdApiExtended = typeof BdApi & {
   Components: {
     Group: string;
     TextInput: string;
+    Button: string;
   };
   ReactDOM: {
     createRoot: (element: HTMLElement) => {
       render: (element: ReactElement) => void;
     };
+  };
+  Logger: {
+    stacktrace: (message: string, error: Error) => void;
+    error: (...message: unknown[]) => void;
+    warn: (...message: unknown[]) => void;
+    info: (...message: unknown[]) => void;
+    debug: (...message: unknown[]) => void;
+    log: (...message: unknown[]) => void;
   };
 };

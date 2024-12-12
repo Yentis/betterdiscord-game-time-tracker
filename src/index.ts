@@ -1,12 +1,11 @@
 import { Plugin } from 'betterdiscord';
 import { CURRENT_VERSION_INFO_KEY, PLUGIN_CHANGELOG } from './pluginConstants';
-import { Logger } from './utils/logger';
 import { SettingsService } from './services/settingsService';
 import { ModulesService } from './services/modulesService';
 import { CurrentVersionInfo } from './interfaces/currentVersionInfo';
 import { ExtendedMeta } from './interfaces/extendedMeta';
 import { GameService } from './services/gameService';
-import { BdApiExtended } from 'interfaces/bdapi';
+import { BoundBdApiExtended } from 'interfaces/bdapi';
 
 export default class GameTimeTrackerPlugin implements Plugin {
   settingsService?: SettingsService;
@@ -14,15 +13,18 @@ export default class GameTimeTrackerPlugin implements Plugin {
   gameService?: GameService;
 
   public meta: ExtendedMeta;
+  public bdApi: BoundBdApiExtended;
+  public logger: BoundBdApiExtended['Logger'];
 
   constructor(meta: ExtendedMeta) {
     this.meta = meta;
-    Logger.setLogger(meta.name);
+    this.bdApi = new BdApi(this.meta.name) as BoundBdApiExtended;
+    this.logger = this.bdApi.Logger;
   }
 
   start(): void {
     this.doStart().catch((error) => {
-      Logger.error(error);
+      this.logger.error(error);
     });
   }
 
@@ -32,8 +34,8 @@ export default class GameTimeTrackerPlugin implements Plugin {
   }
 
   private showChangelogIfNeeded(): void {
-    const currentVersionInfo = (BdApi.Data.load(this.meta.name, CURRENT_VERSION_INFO_KEY) as CurrentVersionInfo) ?? {};
-    const UI = (BdApi as BdApiExtended).UI;
+    const currentVersionInfo = (this.bdApi.Data.load(CURRENT_VERSION_INFO_KEY) as CurrentVersionInfo) ?? {};
+    const UI = this.bdApi.UI;
 
     if (currentVersionInfo.hasShownChangelog !== true || currentVersionInfo.version !== this.meta.version) {
       UI.showChangelogModal({
@@ -46,7 +48,7 @@ export default class GameTimeTrackerPlugin implements Plugin {
         hasShownChangelog: true,
       };
 
-      BdApi.Data.save(this.meta.name, CURRENT_VERSION_INFO_KEY, newVersionInfo);
+      this.bdApi.Data.save(CURRENT_VERSION_INFO_KEY, newVersionInfo);
     }
   }
 

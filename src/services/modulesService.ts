@@ -1,5 +1,4 @@
 import { BaseService } from './baseService';
-import { Logger } from '../utils/logger';
 import Dispatcher from 'interfaces/modules/dispatcher';
 
 export class ModulesService extends BaseService {
@@ -10,7 +9,7 @@ export class ModulesService extends BaseService {
 
     Object.entries(this).forEach(([key, value]) => {
       if (value !== undefined) return;
-      Logger.error(`${key} not found!`);
+      this.logger.error(`${key} not found!`);
     });
 
     return Promise.resolve();

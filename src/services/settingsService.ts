@@ -2,7 +2,6 @@ import { Utils } from '../utils/utils';
 import Settings, { Setting } from '../interfaces/settings';
 import { DEFAULT_SETTINGS, SETTINGS_KEY } from '../pluginConstants';
 import { BaseService } from './baseService';
-import { BdApiExtended } from '../interfaces/bdapi';
 
 export class SettingsService extends BaseService {
   private static readonly TRASH_ICON =
@@ -15,13 +14,14 @@ export class SettingsService extends BaseService {
   settings: Settings = DEFAULT_SETTINGS;
 
   public start(): Promise<void> {
-    const savedSettings = BdApi.Data.load(this.plugin.meta.name, SETTINGS_KEY) as Settings;
+    const savedSettings = this.bdApi.Data.load(SETTINGS_KEY) as Settings;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, savedSettings);
 
     return Promise.resolve();
   }
 
   public getSettingsElement() {
+    const { React, UI } = this.bdApi;
     const settings: Setting[] = [];
 
     Object.entries(this.settings.games)
@@ -36,13 +36,13 @@ export class SettingsService extends BaseService {
         const minutes = Math.floor(seconds / 60);
         seconds -= minutes * 60;
 
-        const deleteButton = BdApi.React.createElement('button', {
+        const deleteButton = React.createElement('button', {
           id: elementId,
           className: 'bd-button bd-button-filled bd-button-color-red',
           dangerouslySetInnerHTML: { __html: SettingsService.TRASH_ICON },
           onClick: () => {
             delete this.settings.games[id];
-            BdApi.Data.save(this.plugin.meta.name, SETTINGS_KEY, this.settings);
+            this.bdApi.Data.save(SETTINGS_KEY, this.settings);
 
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -73,10 +73,10 @@ export class SettingsService extends BaseService {
       settings.push(setting);
     }
 
-    return (BdApi as BdApiExtended).UI.buildSettingsPanel({
+    return UI.buildSettingsPanel({
       settings,
       onChange: () => {
-        BdApi.Data.save(this.plugin.meta.name, SETTINGS_KEY, this.settings);
+        this.bdApi.Data.save(SETTINGS_KEY, this.settings);
       },
     });
   }

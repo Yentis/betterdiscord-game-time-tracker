@@ -1,5 +1,4 @@
 import { SETTINGS_KEY } from '../pluginConstants';
-import { Logger } from '../utils/logger';
 import { BaseService } from './baseService';
 import { ModulesService } from './modulesService';
 import { SettingsService } from './settingsService';
@@ -23,7 +22,7 @@ export class GameService extends BaseService {
 
   private onRunningGamesChange = (event: unknown) => {
     if (event === undefined) return;
-    Logger.debug('Games changed:', event);
+    this.logger.debug('Games changed:', event);
 
     const data = event as {
       added: Game[];
@@ -44,13 +43,13 @@ export class GameService extends BaseService {
     data.removed.forEach((game) => {
       const startTime = game.start ?? this.gameStartTimes[game.exeName];
       if (startTime === undefined) {
-        Logger.warn(`Game ${game.name} closed but start time is unknown`);
+        this.logger.warn(`Game ${game.name} closed but start time is unknown`);
         return;
       }
 
       const id = game.exeName;
       const playtimeSeconds = (new Date().getTime() - startTime) / 1000;
-      Logger.info(`Played ${game.name} for ${playtimeSeconds} seconds`);
+      this.logger.info(`Played ${game.name} for ${playtimeSeconds} seconds`);
 
       const trackedGame = games[id] ?? { name: game.name, playtimeSeconds: 0 };
       trackedGame.name = game.name;
@@ -58,7 +57,7 @@ export class GameService extends BaseService {
       games[id] = trackedGame;
     });
 
-    BdApi.Data.save(this.plugin.meta.name, SETTINGS_KEY, this.settingsService.settings);
+    this.bdApi.Data.save(SETTINGS_KEY, this.settingsService.settings);
   };
 
   public start(modulesService: ModulesService, settingsService: SettingsService): Promise<void> {

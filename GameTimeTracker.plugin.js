@@ -24,30 +24,6 @@ const DEFAULT_SETTINGS = {
   games: {},
 };
 
-class Logger {
-  static pluginName;
-
-  static setLogger(pluginName) {
-    this.pluginName = pluginName;
-  }
-
-  static debug(...args) {
-    console.debug(this.pluginName, ...args);
-  }
-
-  static info(...args) {
-    console.info(this.pluginName, ...args);
-  }
-
-  static warn(...args) {
-    console.warn(this.pluginName, ...args);
-  }
-
-  static error(...args) {
-    console.error(this.pluginName, ...args);
-  }
-}
-
 class Utils {
   static SettingItem(options) {
     return {
@@ -59,9 +35,13 @@ class Utils {
 
 class BaseService {
   plugin;
+  bdApi;
+  logger;
 
   constructor(plugin) {
     this.plugin = plugin;
+    this.bdApi = this.plugin.bdApi;
+    this.logger = this.bdApi.Logger;
   }
 }
 
@@ -76,13 +56,14 @@ class SettingsService extends BaseService {
   settings = DEFAULT_SETTINGS;
 
   start() {
-    const savedSettings = BdApi.Data.load(this.plugin.meta.name, SETTINGS_KEY);
+    const savedSettings = this.bdApi.Data.load(SETTINGS_KEY);
     this.settings = Object.assign({}, DEFAULT_SETTINGS, savedSettings);
 
     return Promise.resolve();
   }
 
   getSettingsElement() {
+    const { React, UI } = this.bdApi;
     const settings = [];
 
     Object.entries(this.settings.games)
@@ -97,13 +78,13 @@ class SettingsService extends BaseService {
         const minutes = Math.floor(seconds / 60);
         seconds -= minutes * 60;
 
-        const deleteButton = BdApi.React.createElement('button', {
+        const deleteButton = React.createElement('button', {
           id: elementId,
           className: 'bd-button bd-button-filled bd-button-color-red',
           dangerouslySetInnerHTML: { __html: SettingsService.TRASH_ICON },
           onClick: () => {
             delete this.settings.games[id];
-            BdApi.Data.save(this.plugin.meta.name, SETTINGS_KEY, this.settings);
+            this.bdApi.Data.save(SETTINGS_KEY, this.settings);
 
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -134,10 +115,10 @@ class SettingsService extends BaseService {
       settings.push(setting);
     }
 
-    return BdApi.UI.buildSettingsPanel({
+    return UI.buildSettingsPanel({
       settings,
       onChange: () => {
-        BdApi.Data.save(this.plugin.meta.name, SETTINGS_KEY, this.settings);
+        this.bdApi.Data.save(SETTINGS_KEY, this.settings);
       },
     });
   }
@@ -155,7 +136,7 @@ class ModulesService extends BaseService {
 
     Object.entries(this).forEach(([key, value]) => {
       if (value !== undefined) return;
-      Logger.error(`${key} not found!`);
+      this.logger.error(`${key} not found!`);
     });
 
     return Promise.resolve();
@@ -174,7 +155,7 @@ class GameService extends BaseService {
 
   onRunningGamesChange = (event) => {
     if (event === undefined) return;
-    Logger.debug('Games changed:', event);
+    this.logger.debug('Games changed:', event);
 
     const data = event;
 
@@ -192,13 +173,13 @@ class GameService extends BaseService {
     data.removed.forEach((game) => {
       const startTime = game.start ?? this.gameStartTimes[game.exeName];
       if (startTime === undefined) {
-        Logger.warn(`Game ${game.name} closed but start time is unknown`);
+        this.logger.warn(`Game ${game.name} closed but start time is unknown`);
         return;
       }
 
       const id = game.exeName;
       const playtimeSeconds = (new Date().getTime() - startTime) / 1000;
-      Logger.info(`Played ${game.name} for ${playtimeSeconds} seconds`);
+      this.logger.info(`Played ${game.name} for ${playtimeSeconds} seconds`);
 
       const trackedGame = games[id] ?? { name: game.name, playtimeSeconds: 0 };
       trackedGame.name = game.name;
@@ -206,7 +187,7 @@ class GameService extends BaseService {
       games[id] = trackedGame;
     });
 
-    BdApi.Data.save(this.plugin.meta.name, SETTINGS_KEY, this.settingsService.settings);
+    this.bdApi.Data.save(SETTINGS_KEY, this.settingsService.settings);
   };
 
   start(modulesService, settingsService) {
@@ -229,15 +210,18 @@ class GameTimeTrackerPlugin {
   gameService;
 
   meta;
+  bdApi;
+  logger;
 
   constructor(meta) {
     this.meta = meta;
-    Logger.setLogger(meta.name);
+    this.bdApi = new BdApi(this.meta.name);
+    this.logger = this.bdApi.Logger;
   }
 
   start() {
     this.doStart().catch((error) => {
-      Logger.error(error);
+      this.logger.error(error);
     });
   }
 
@@ -247,8 +231,8 @@ class GameTimeTrackerPlugin {
   }
 
   showChangelogIfNeeded() {
-    const currentVersionInfo = BdApi.Data.load(this.meta.name, CURRENT_VERSION_INFO_KEY) ?? {};
-    const UI = BdApi.UI;
+    const currentVersionInfo = this.bdApi.Data.load(CURRENT_VERSION_INFO_KEY) ?? {};
+    const UI = this.bdApi.UI;
 
     if (currentVersionInfo.hasShownChangelog !== true || currentVersionInfo.version !== this.meta.version) {
       UI.showChangelogModal({
@@ -261,7 +245,7 @@ class GameTimeTrackerPlugin {
         hasShownChangelog: true,
       };
 
-      BdApi.Data.save(this.meta.name, CURRENT_VERSION_INFO_KEY, newVersionInfo);
+      this.bdApi.Data.save(CURRENT_VERSION_INFO_KEY, newVersionInfo);
     }
   }
 
