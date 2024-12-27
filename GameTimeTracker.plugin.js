@@ -1,6 +1,6 @@
 /**
  * @name GameTimeTracker
- * @version 1.0.0
+ * @version 1.1.0
  * @description Track time spent in games
  * @license MIT
  * @author Yentis
@@ -12,9 +12,9 @@
 
 const PLUGIN_CHANGELOG = [
   {
-    title: '1.0.0',
-    type: 'added',
-    items: ['Initial release'],
+    title: '1.1.0',
+    type: 'changed',
+    items: ['Games are now sorted by when you last played them'],
   },
 ];
 
@@ -68,6 +68,7 @@ class SettingsService extends BaseService {
 
     Object.entries(this.settings.games)
       .reverse()
+      .sort(([_aKey, aGame], [_bKey, bGame]) => (bGame.lastPlayed ?? 0) - (aGame.lastPlayed ?? 0))
       .forEach(([id, game]) => {
         const elementId = `GTT-Game-${id}`;
         let seconds = game.playtimeSeconds;
@@ -184,6 +185,7 @@ class GameService extends BaseService {
       const trackedGame = games[id] ?? { name: game.name, playtimeSeconds: 0 };
       trackedGame.name = game.name;
       trackedGame.playtimeSeconds += Math.round(playtimeSeconds);
+      trackedGame.lastPlayed = Date.now();
       games[id] = trackedGame;
     });
 

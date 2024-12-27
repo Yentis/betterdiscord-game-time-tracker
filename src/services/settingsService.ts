@@ -26,6 +26,7 @@ export class SettingsService extends BaseService {
 
     Object.entries(this.settings.games)
       .reverse()
+      .sort(([_aKey, aGame], [_bKey, bGame]) => (bGame.lastPlayed ?? 0) - (aGame.lastPlayed ?? 0))
       .forEach(([id, game]) => {
         const elementId = `GTT-Game-${id}`;
         let seconds = game.playtimeSeconds;

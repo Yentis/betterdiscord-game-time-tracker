@@ -12,6 +12,7 @@ interface Game {
 export interface TrackedGame {
   name: string;
   playtimeSeconds: number;
+  lastPlayed?: number;
 }
 
 export class GameService extends BaseService {
@@ -54,6 +55,7 @@ export class GameService extends BaseService {
       const trackedGame = games[id] ?? { name: game.name, playtimeSeconds: 0 };
       trackedGame.name = game.name;
       trackedGame.playtimeSeconds += Math.round(playtimeSeconds);
+      trackedGame.lastPlayed = Date.now();
       games[id] = trackedGame;
     });
 
