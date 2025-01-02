@@ -29,14 +29,6 @@ export class SettingsService extends BaseService {
       .sort(([_aKey, aGame], [_bKey, bGame]) => (bGame.lastPlayed ?? 0) - (aGame.lastPlayed ?? 0))
       .forEach(([id, game]) => {
         const elementId = `GTT-Game-${id}`;
-        let seconds = game.playtimeSeconds;
-
-        const hours = Math.floor(seconds / 3600);
-        seconds -= hours * 3600;
-
-        const minutes = Math.floor(seconds / 60);
-        seconds -= minutes * 60;
-
         const deleteButton = React.createElement('button', {
           id: elementId,
           className: 'bd-button bd-button-filled bd-button-color-red',
@@ -56,7 +48,7 @@ export class SettingsService extends BaseService {
         const settingItem = Utils.SettingItem({
           id: elementId,
           name: game.name,
-          note: `${hours}h ${minutes}m ${seconds}s`,
+          note: Utils.humanReadablePlaytime(game.playtimeSeconds),
           children: [deleteButton],
         });
 

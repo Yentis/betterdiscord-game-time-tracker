@@ -1,6 +1,6 @@
 /**
  * @name GameTimeTracker
- * @version 1.1.0
+ * @version 1.2.0
  * @description Track time spent in games
  * @license MIT
  * @author Yentis
@@ -11,6 +11,11 @@
 'use strict';
 
 const PLUGIN_CHANGELOG = [
+  {
+    title: '1.2.0',
+    type: 'added',
+    items: ['Added playtimesummary slash command'],
+  },
   {
     title: '1.1.0',
     type: 'changed',
@@ -30,6 +35,22 @@ class Utils {
       ...options,
       type: 'custom',
     };
+  }
+
+  static isObject(object) {
+    return typeof object === 'object' && !!object && !Array.isArray(object);
+  }
+
+  static humanReadablePlaytime(playtimeSeconds) {
+    let seconds = playtimeSeconds;
+
+    const hours = Math.floor(seconds / 3600);
+    seconds -= hours * 3600;
+
+    const minutes = Math.floor(seconds / 60);
+    seconds -= minutes * 60;
+
+    return `${hours}h ${minutes}m ${seconds}s`;
   }
 }
 
@@ -71,14 +92,6 @@ class SettingsService extends BaseService {
       .sort(([_aKey, aGame], [_bKey, bGame]) => (bGame.lastPlayed ?? 0) - (aGame.lastPlayed ?? 0))
       .forEach(([id, game]) => {
         const elementId = `GTT-Game-${id}`;
-        let seconds = game.playtimeSeconds;
-
-        const hours = Math.floor(seconds / 3600);
-        seconds -= hours * 3600;
-
-        const minutes = Math.floor(seconds / 60);
-        seconds -= minutes * 60;
-
         const deleteButton = React.createElement('button', {
           id: elementId,
           className: 'bd-button bd-button-filled bd-button-color-red',
@@ -98,7 +111,7 @@ class SettingsService extends BaseService {
         const settingItem = Utils.SettingItem({
           id: elementId,
           name: game.name,
-          note: `${hours}h ${minutes}m ${seconds}s`,
+          note: Utils.humanReadablePlaytime(game.playtimeSeconds),
           children: [deleteButton],
         });
 
@@ -131,9 +144,30 @@ class SettingsService extends BaseService {
 
 class ModulesService extends BaseService {
   dispatcher;
+  commandsModule = {};
+  messageModule;
+  channelModule;
 
   start() {
     this.dispatcher = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('dispatch', 'subscribe'));
+
+    this.commandsModule.module = BdApi.Webpack.getModule((exports) => {
+      if (!Utils.isObject(exports)) return false;
+      if (exports.Z !== undefined) return false;
+
+      return Object.entries(exports).some(([key, value]) => {
+        if (!(typeof value === 'function')) return false;
+        const valueString = value.toString();
+
+        const match = valueString.includes('BUILT_IN_INTEGRATION') && valueString.includes('BUILT_IN_TEXT');
+        if (match) this.commandsModule.key = key;
+
+        return match;
+      });
+    });
+
+    this.messageModule = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('sendMessage'));
+    this.channelModule = BdApi.Webpack.getStore('SelectedChannelStore');
 
     Object.entries(this).forEach(([key, value]) => {
       if (value !== undefined) return;
@@ -206,9 +240,112 @@ class GameService extends BaseService {
   }
 }
 
+class PatchesService extends BaseService {
+  command;
+
+  start(modulesService, settingsService) {
+    const name = 'playtimesummary';
+    const description = 'Send GameTimeTracker playtime summary';
+
+    const typeName = 'type';
+    const typeDescription = 'How the summary should be sent';
+
+    this.command = {
+      id: 'GameTimeTracker-PlayTimeSummary',
+      untranslatedName: name,
+      displayName: name,
+      type: 1, // CHAT
+      inputType: 0, // BUILT_IN
+      applicationId: '-1', // BUILT_IN
+      untranslatedDescription: description,
+      displayDescription: description,
+      options: [
+        {
+          name: typeName,
+          displayName: typeName,
+          description: typeDescription,
+          displayDescription: typeDescription,
+          required: true,
+          type: 3, // STRING
+          choices: [
+            {
+              name: 'clipboard',
+              displayName: 'clipboard',
+              value: 'clipboard',
+            },
+            {
+              name: 'message',
+              displayName: 'message',
+              value: 'message',
+            },
+            {
+              name: 'clyde',
+              displayName: 'clyde',
+              value: 'clyde',
+            },
+          ],
+        },
+      ],
+      execute: (event) => {
+        try {
+          const channelId = modulesService.channelModule.getCurrentlySelectedChannelId() ?? '';
+          if (!channelId) return;
+
+          const games = Object.values(settingsService.settings.games).sort(
+            (a, b) => b.playtimeSeconds - a.playtimeSeconds
+          );
+
+          games.push({
+            name: '---------\nTotal',
+            playtimeSeconds: games.reduce((partialSum, game) => partialSum + game.playtimeSeconds, 0),
+          });
+
+          const content = games
+            .map((game) => `${game.name} - ${Utils.humanReadablePlaytime(game.playtimeSeconds)}`)
+            .join('\n');
+
+          const type = event[0]?.value ?? 'message';
+
+          if (type === 'message') {
+            modulesService.messageModule.sendMessage(channelId, {
+              content,
+              invalidEmojis: [],
+              tts: false,
+              validNonShortcutEmojis: [],
+            });
+          } else if (type === 'clipboard') {
+            DiscordNative.clipboard.copy(content);
+          } else if (type === 'clyde') {
+            modulesService.messageModule.sendBotMessage(channelId, content);
+          }
+        } catch (error) {
+          this.logger.error(error);
+        }
+      },
+    };
+
+    this.bdApi.Patcher.after(
+      modulesService.commandsModule.module,
+      modulesService.commandsModule.key,
+      (_, _2, result) => {
+        if (!this.command) return;
+        result.push(this.command);
+      }
+    );
+
+    return Promise.resolve();
+  }
+
+  stop() {
+    this.command = undefined;
+    this.bdApi.Patcher.unpatchAll();
+  }
+}
+
 class GameTimeTrackerPlugin {
   settingsService;
   modulesService;
+  patchesService;
   gameService;
 
   meta;
@@ -258,6 +395,9 @@ class GameTimeTrackerPlugin {
     this.modulesService = new ModulesService(this);
     await this.modulesService.start();
 
+    this.patchesService = new PatchesService(this);
+    await this.patchesService.start(this.modulesService, this.settingsService);
+
     this.gameService = new GameService(this);
     await this.gameService.start(this.modulesService, this.settingsService);
   }
@@ -269,6 +409,9 @@ class GameTimeTrackerPlugin {
   stop() {
     this.gameService?.stop();
     this.gameService = undefined;
+
+    this.patchesService?.stop();
+    this.patchesService = undefined;
 
     this.modulesService?.stop();
     this.modulesService = undefined;

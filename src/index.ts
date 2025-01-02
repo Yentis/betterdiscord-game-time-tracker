@@ -6,10 +6,12 @@ import { CurrentVersionInfo } from './interfaces/currentVersionInfo';
 import { ExtendedMeta } from './interfaces/extendedMeta';
 import { GameService } from './services/gameService';
 import { BoundBdApiExtended } from 'interfaces/bdapi';
+import { PatchesService } from './services/patchesService';
 
 export default class GameTimeTrackerPlugin implements Plugin {
   settingsService?: SettingsService;
   modulesService?: ModulesService;
+  patchesService?: PatchesService;
   gameService?: GameService;
 
   public meta: ExtendedMeta;
@@ -59,6 +61,9 @@ export default class GameTimeTrackerPlugin implements Plugin {
     this.modulesService = new ModulesService(this);
     await this.modulesService.start();
 
+    this.patchesService = new PatchesService(this);
+    await this.patchesService.start(this.modulesService, this.settingsService);
+
     this.gameService = new GameService(this);
     await this.gameService.start(this.modulesService, this.settingsService);
   }
@@ -70,6 +75,9 @@ export default class GameTimeTrackerPlugin implements Plugin {
   stop(): void {
     this.gameService?.stop();
     this.gameService = undefined;
+
+    this.patchesService?.stop();
+    this.patchesService = undefined;
 
     this.modulesService?.stop();
     this.modulesService = undefined;
