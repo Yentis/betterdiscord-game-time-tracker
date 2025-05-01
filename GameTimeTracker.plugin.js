@@ -1,6 +1,6 @@
 /**
  * @name GameTimeTracker
- * @version 1.2.0
+ * @version 1.2.1
  * @description Track time spent in games
  * @license MIT
  * @author Yentis
@@ -12,14 +12,14 @@
 
 const PLUGIN_CHANGELOG = [
   {
+    title: '1.2.1',
+    type: 'fixed',
+    items: ['Prevent playtime becoming negative if game start time is invalid'],
+  },
+  {
     title: '1.2.0',
     type: 'added',
     items: ['Added playtimesummary slash command'],
-  },
-  {
-    title: '1.1.0',
-    type: 'changed',
-    items: ['Games are now sorted by when you last played them'],
   },
 ];
 
@@ -213,7 +213,7 @@ class GameService extends BaseService {
       }
 
       const id = game.exeName;
-      const playtimeSeconds = (new Date().getTime() - startTime) / 1000;
+      const playtimeSeconds = Math.max(0, (new Date().getTime() - startTime) / 1000);
       this.logger.info(`Played ${game.name} for ${playtimeSeconds} seconds`);
 
       const trackedGame = games[id] ?? { name: game.name, playtimeSeconds: 0 };

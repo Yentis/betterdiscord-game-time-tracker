@@ -49,7 +49,7 @@ export class GameService extends BaseService {
       }
 
       const id = game.exeName;
-      const playtimeSeconds = (new Date().getTime() - startTime) / 1000;
+      const playtimeSeconds = Math.max(0, (new Date().getTime() - startTime) / 1000);
       this.logger.info(`Played ${game.name} for ${playtimeSeconds} seconds`);
 
       const trackedGame = games[id] ?? { name: game.name, playtimeSeconds: 0 };
