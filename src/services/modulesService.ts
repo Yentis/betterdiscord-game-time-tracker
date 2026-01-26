@@ -58,7 +58,9 @@ export class ModulesService extends BaseService {
   channelModule!: ChannelModule;
 
   public start(): Promise<void> {
-    this.dispatcher = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('dispatch', 'subscribe')) as Dispatcher;
+    this.dispatcher = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('dispatch', 'subscribe'), {
+      searchExports: true,
+    }) as Dispatcher;
 
     this.commandsModule.module = BdApi.Webpack.getModule((exports) => {
       if (!Utils.isObject(exports)) return false;

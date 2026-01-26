@@ -1,6 +1,6 @@
 /**
  * @name GameTimeTracker
- * @version 1.2.1
+ * @version 1.2.2
  * @description Track time spent in games
  * @license MIT
  * @author Yentis
@@ -12,14 +12,9 @@
 
 const PLUGIN_CHANGELOG = [
   {
-    title: '1.2.1',
+    title: '1.2.2',
     type: 'fixed',
-    items: ['Prevent playtime becoming negative if game start time is invalid'],
-  },
-  {
-    title: '1.2.0',
-    type: 'added',
-    items: ['Added playtimesummary slash command'],
+    items: ['Fix plugin after Discord update'],
   },
 ];
 
@@ -149,7 +144,9 @@ class ModulesService extends BaseService {
   channelModule;
 
   start() {
-    this.dispatcher = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('dispatch', 'subscribe'));
+    this.dispatcher = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('dispatch', 'subscribe'), {
+      searchExports: true,
+    });
 
     this.commandsModule.module = BdApi.Webpack.getModule((exports) => {
       if (!Utils.isObject(exports)) return false;
