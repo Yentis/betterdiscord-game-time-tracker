@@ -27,6 +27,43 @@ type SettingsPanelOptions = {
   getDrawerState?: (categoryId: string, defaultState: boolean) => void;
 };
 
+type OptionType = {
+  ATTACHMENT: number;
+  BOOLEAN: number;
+  CHANNEL: number;
+  INTEGER: number;
+  MENTIONABLE: number;
+  NUMBER: number;
+  ROLE: number;
+  STRING: number;
+  SUB_COMMAND: number;
+  SUB_COMMAND_GROUP: number;
+  USER: number;
+};
+
+type ExecuteOptions = [{ value?: string }];
+
+export type Command = {
+  id: string;
+  name: string;
+  description?: string;
+  options?: {
+    name: string;
+    description?: string;
+    required?: boolean;
+    type: number;
+    maxLength?: number;
+    minLength?: number;
+    maxValue?: number;
+    minValue?: number;
+    choices?: {
+      name: string;
+      value: string | number;
+    }[];
+  }[];
+  execute: (options: ExecuteOptions) => void;
+};
+
 // TODO: remove custom TS type when BD types are updated
 export type BoundBdApiExtended = BoundBdApi & {
   UI: {
@@ -51,5 +88,12 @@ export type BoundBdApiExtended = BoundBdApi & {
     info: (...message: unknown[]) => void;
     debug: (...message: unknown[]) => void;
     log: (...message: unknown[]) => void;
+  };
+  Commands: {
+    Types: {
+      OptionTypes: OptionType;
+    };
+    register: (...commands: Command[]) => () => void;
+    unregisterAll: () => void;
   };
 };

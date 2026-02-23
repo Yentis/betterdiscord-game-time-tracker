@@ -2,9 +2,9 @@ import { ChangelogChanges } from './interfaces/bdapi';
 
 export const PLUGIN_CHANGELOG: ChangelogChanges[] = [
   {
-    title: '1.2.2',
+    title: '1.2.3',
     type: 'fixed',
-    items: ['Fix plugin after Discord update'],
+    items: ['Fix playtimesummary command'],
   },
 ];
 

@@ -1,6 +1,6 @@
 /**
  * @name GameTimeTracker
- * @version 1.2.2
+ * @version 1.2.3
  * @description Track time spent in games
  * @license MIT
  * @author Yentis
@@ -12,9 +12,9 @@
 
 const PLUGIN_CHANGELOG = [
   {
-    title: '1.2.2',
+    title: '1.2.3',
     type: 'fixed',
-    items: ['Fix plugin after Discord update'],
+    items: ['Fix playtimesummary command'],
   },
 ];
 
@@ -139,28 +139,12 @@ class SettingsService extends BaseService {
 
 class ModulesService extends BaseService {
   dispatcher;
-  commandsModule = {};
   messageModule;
   channelModule;
 
   start() {
     this.dispatcher = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('dispatch', 'subscribe'), {
       searchExports: true,
-    });
-
-    this.commandsModule.module = BdApi.Webpack.getModule((exports) => {
-      if (!Utils.isObject(exports)) return false;
-      if (exports.Z !== undefined) return false;
-
-      return Object.entries(exports).some(([key, value]) => {
-        if (!(typeof value === 'function')) return false;
-        const valueString = value.toString();
-
-        const match = valueString.includes('BUILT_IN_INTEGRATION') && valueString.includes('BUILT_IN_TEXT');
-        if (match) this.commandsModule.key = key;
-
-        return match;
-      });
     });
 
     this.messageModule = BdApi.Webpack.getModule(BdApi.Webpack.Filters.byKeys('sendMessage'));
@@ -237,47 +221,29 @@ class GameService extends BaseService {
   }
 }
 
-class PatchesService extends BaseService {
-  command;
-
+class CommandsService extends BaseService {
   start(modulesService, settingsService) {
-    const name = 'playtimesummary';
-    const description = 'Send GameTimeTracker playtime summary';
-
-    const typeName = 'type';
-    const typeDescription = 'How the summary should be sent';
-
-    this.command = {
-      id: 'GameTimeTracker-PlayTimeSummary',
-      untranslatedName: name,
-      displayName: name,
-      type: 1, // CHAT
-      inputType: 0, // BUILT_IN
-      applicationId: '-1', // BUILT_IN
-      untranslatedDescription: description,
-      displayDescription: description,
+    const command = {
+      id: 'PlayTimeSummary',
+      name: 'playtimesummary',
+      description: 'Send GameTimeTracker playtime summary',
       options: [
         {
-          name: typeName,
-          displayName: typeName,
-          description: typeDescription,
-          displayDescription: typeDescription,
+          name: 'type',
+          description: 'How the summary should be sent',
           required: true,
-          type: 3, // STRING
+          type: this.bdApi.Commands.Types.OptionTypes.STRING,
           choices: [
             {
               name: 'clipboard',
-              displayName: 'clipboard',
               value: 'clipboard',
             },
             {
               name: 'message',
-              displayName: 'message',
               value: 'message',
             },
             {
               name: 'clyde',
-              displayName: 'clyde',
               value: 'clyde',
             },
           ],
@@ -321,28 +287,20 @@ class PatchesService extends BaseService {
       },
     };
 
-    this.bdApi.Patcher.after(
-      modulesService.commandsModule.module,
-      modulesService.commandsModule.key,
-      (_, _2, result) => {
-        if (!this.command) return;
-        result.push(this.command);
-      }
-    );
+    this.bdApi.Commands.register(command);
 
     return Promise.resolve();
   }
 
   stop() {
-    this.command = undefined;
-    this.bdApi.Patcher.unpatchAll();
+    this.bdApi.Commands.unregisterAll();
   }
 }
 
 class GameTimeTrackerPlugin {
   settingsService;
   modulesService;
-  patchesService;
+  commandsService;
   gameService;
 
   meta;
@@ -363,7 +321,7 @@ class GameTimeTrackerPlugin {
 
   async doStart() {
     this.showChangelogIfNeeded();
-    await this.startServicesAndPatches();
+    await this.startServices();
   }
 
   showChangelogIfNeeded() {
@@ -385,15 +343,15 @@ class GameTimeTrackerPlugin {
     }
   }
 
-  async startServicesAndPatches() {
+  async startServices() {
     this.settingsService = new SettingsService(this);
     await this.settingsService.start();
 
     this.modulesService = new ModulesService(this);
     await this.modulesService.start();
 
-    this.patchesService = new PatchesService(this);
-    await this.patchesService.start(this.modulesService, this.settingsService);
+    this.commandsService = new CommandsService(this);
+    await this.commandsService.start(this.modulesService, this.settingsService);
 
     this.gameService = new GameService(this);
     await this.gameService.start(this.modulesService, this.settingsService);
@@ -407,8 +365,8 @@ class GameTimeTrackerPlugin {
     this.gameService?.stop();
     this.gameService = undefined;
 
-    this.patchesService?.stop();
-    this.patchesService = undefined;
+    this.commandsService?.stop();
+    this.commandsService = undefined;
 
     this.modulesService?.stop();
     this.modulesService = undefined;

@@ -1,7 +1,8 @@
 import { BaseService } from './baseService';
-import { Command, ModulesService } from './modulesService';
+import { ModulesService } from './modulesService';
 import { SettingsService } from './settingsService';
 import { Utils } from '../utils/utils';
+import { Command } from '../interfaces/bdapi';
 
 declare const DiscordNative: {
   clipboard: {
@@ -9,47 +10,29 @@ declare const DiscordNative: {
   };
 };
 
-export class PatchesService extends BaseService {
-  private command?: Command;
-
+export class CommandsService extends BaseService {
   public start(modulesService: ModulesService, settingsService: SettingsService): Promise<void> {
-    const name = 'playtimesummary';
-    const description = 'Send GameTimeTracker playtime summary';
-
-    const typeName = 'type';
-    const typeDescription = 'How the summary should be sent';
-
-    this.command = {
-      id: 'GameTimeTracker-PlayTimeSummary',
-      untranslatedName: name,
-      displayName: name,
-      type: 1, // CHAT
-      inputType: 0, // BUILT_IN
-      applicationId: '-1', // BUILT_IN
-      untranslatedDescription: description,
-      displayDescription: description,
+    const command: Command = {
+      id: 'PlayTimeSummary',
+      name: 'playtimesummary',
+      description: 'Send GameTimeTracker playtime summary',
       options: [
         {
-          name: typeName,
-          displayName: typeName,
-          description: typeDescription,
-          displayDescription: typeDescription,
+          name: 'type',
+          description: 'How the summary should be sent',
           required: true,
-          type: 3, // STRING
+          type: this.bdApi.Commands.Types.OptionTypes.STRING,
           choices: [
             {
               name: 'clipboard',
-              displayName: 'clipboard',
               value: 'clipboard',
             },
             {
               name: 'message',
-              displayName: 'message',
               value: 'message',
             },
             {
               name: 'clyde',
-              displayName: 'clyde',
               value: 'clyde',
             },
           ],
@@ -93,20 +76,12 @@ export class PatchesService extends BaseService {
       },
     };
 
-    this.bdApi.Patcher.after(
-      modulesService.commandsModule.module,
-      modulesService.commandsModule.key as never,
-      (_, _2, result: Command[]) => {
-        if (!this.command) return;
-        result.push(this.command);
-      }
-    );
+    this.bdApi.Commands.register(command);
 
     return Promise.resolve();
   }
 
   public stop() {
-    this.command = undefined;
-    this.bdApi.Patcher.unpatchAll();
+    this.bdApi.Commands.unregisterAll();
   }
 }
